@@ -1,27 +1,5 @@
-﻿#Make sure you set your execution policy
-
-$SubscriptionName = "Visual Studio Enterprise"
-$StorageAccountName = "lukesstorageaccount"
-$ContainerName = "mycontainer"
-$ResourceGroup = "myresourcegrou"
-$StorageKey = 0
-$DirectoryToUpload = $PSScriptRoot
-$PercentageToPrint = 5
-$UploadTestBlobs = $FALSE
-
-Get-AuthenticatedWithAzure -SubscriptionName $SubscriptionName
-
-$StorageKey = Get-StorageKey -IndexOfKeyToUse $StorageKey -StorageAccountName $StorageAccountName -ResourceGroup $ResourceGroup
-$context = Get-StorageContext -StorageAccountName $StorageAccountName -StorageKey $StorageKey
-if ($UploadTestBlobs -eq $TRUE)
-{
-    Add-TestData -ContainerName $ContainerName -DirectoryToUpload $DirectoryToUpload -Context $context
-}
-$AllBlobs = Get-AzureStorageBlob -Container $ContainerName -Context $context | Sort-Object Length -Descending
-$TopIndexes = Get-PercentageOfIndexes -array $AllBlobs -PercentageOf $PercentageToPrint
-$TopBlobs = ($AllBlobs | Select-Object -First $TopIndexes)
-Show-Output -AllBlobs $TopBlobs -StorageAccountName $StorageAccountName -ContainerName $ContainerName -PercentageToPrint $PercentageToPrint
-
+﻿#requires -version 4.0
+#requires –runasadministrator
 function Show-Output
 {
     <#
@@ -34,6 +12,8 @@ function Show-Output
     #>
     Param(
         [Parameter(Mandatory=$true)]
+        [array]$TopBlobs,
+        [Parameter(Mandatory=$true)]
         [array]$AllBlobs,
         [Parameter(Mandatory=$true)]
         [string]$StorageAccountName,
@@ -43,7 +23,8 @@ function Show-Output
         [int]$PercentageToPrint
     )
     Write-Output "Top $PercentageToPrint% of Blobs in '$StorageAccountName' in Container '$ContainerName' by size."
-    $AllBlobs | Format-Table -Property Name, @{Name="Size (KBs)";Expression={[math]::Ceiling($_.Length / 1Kb)}}
+    Write-Output "Total Blobs: $($AllBlobs.Count)"
+    $TopBlobs | Format-Table -Property Name, @{Name="Size (KBs)";Expression={[math]::Ceiling($_.Length / 1Kb)}}
 }
 
 function Get-StorageContext
@@ -83,21 +64,20 @@ function Get-StorageKey
         [Parameter(Mandatory=$true)]
         [string]$ResourceGroup
     )  
-    return (Get-AzureRMStorageAccountKey -ResourceGroup $ResourceGroup -StorageAccountName $StorageAccountName)[$IndexOfKeyToUse].value
+
+    $key = (Get-AzureRMStorageAccountKey -ResourceGroup $ResourceGroup -StorageAccountName $StorageAccountName)[$IndexOfKeyToUse].value
+    return $key
 }
 
 function Get-AuthenticatedWithAzure
 {
     <#
         .Synopsis
-            Checks to see if the session is logged in. If its not, a log in window appears to authenticate to Azure.
+            Checks to see if there is an available AzureRMProfile. If there isn't, it opens a log in window.
 
-            If set AzureSubscription fails, the session needs to be authenticated and the window appears.
+            If the user successfully logs in, a profile is created on the disk that contains the session so they don't have to keep logging in.
 
-            If set AzureSubscription succeeds, we're already connected and do not need to authenticate again.
-
-            Authentication is cached for a couple of hours, in an automated system we would need to implement a way to store the Azure credentials permanently.
-            This should be done with a Config management tool like Chef (Secure Data-Bags), or by supplying secure environment variables using a tool like GoCD.
+            This profile eventually expires.
 
         .Example
             Get-AuthenticatedWithAzure -SubscriptionName "mysubname"
@@ -107,26 +87,28 @@ function Get-AuthenticatedWithAzure
     Param(
         [Parameter(Mandatory=$true)]
         [string]$SubscriptionName
-    )  
-    Try
+    )
+    $ProfilePath = "$PSScriptRoot\profile.txt"
+    if ((Test-Path $ProfilePath) -eq $TRUE)
     {
-        Set-AzureSubscription -SubscriptionName $SubscriptionName
+        Select-AzureRmProfile -Path $ProfilePath
     }
-    Catch{
+    else
+    {
         Add-AzureRmAccount
-        Set-AzureSubscription -SubscriptionName $SubscriptionName
+        Save-AzureRmProfile -Path $ProfilePath 
     }
 }
 
 
-function Get-PercentageOfIndexes
+function Get-PercentageOfElementsInArray
 {
     <#
         .Synopsis
             Returns the first X of elements in the supplied array, where X is the percentage supplied by $PercentageOf
 
         .Example
-            Get-PercentageOfIndexes -array < array of objects > -PercentageOf 5
+            Get-PercentageOfElementsInArray -array < array of objects > -PercentageOf 5
 
             This returns the first five percent of the supplied array.
     #>
@@ -136,7 +118,7 @@ function Get-PercentageOfIndexes
         [Parameter(Mandatory=$true)]
         [int]$PercentageOf
     )   
-    return [math]::Ceiling(($PercentageOf * $array.Count) / 100)
+    return [math]::Ceiling(($PercentageOf * $array.Length + 1) / 100)
 }
 
 
@@ -161,8 +143,35 @@ function Add-TestData
         [Parameter(Mandatory=$true)]
         [Microsoft.WindowsAzure.Commands.Common.Storage.AzureStorageContext]$Context
     )
+    
+
     foreach ($image in Get-ChildItem $DirectoryToUpload) {
+        $image
         Set-AzureStorageBlobContent -File $image.FullName -Container $ContainerName -Blob $image.Name -Context $Context -Force
     }
 
 }
+    #Make sure you set your execution policy
+    Install-Module AzureRM
+
+    $SubscriptionName = "Visual Studio Enterprise"
+    $StorageAccountName = "lukesstorageaccount"
+    $ContainerName = "mycontainer"
+    $ResourceGroup = "myresourcegrou"
+    $StorageKey = 0
+    $DirectoryToUpload = $PSScriptRoot
+    $PercentageToPrint = 5
+    $UploadTestBlobs = $FALSE
+    Get-AuthenticatedWithAzure -SubscriptionName $SubscriptionName
+
+    $StorageKey = Get-StorageKey -IndexOfKeyToUse $StorageKey -StorageAccountName $StorageAccountName -ResourceGroup $ResourceGroup
+    $context = Get-StorageContext -StorageAccountName $StorageAccountName -StorageKey $StorageKey
+    if ($UploadTestBlobs -eq $TRUE)
+    {
+        Add-TestData -ContainerName $ContainerName -DirectoryToUpload $DirectoryToUpload -Context $context
+    }
+    $AllBlobs = Get-AzureStorageBlob -Container $ContainerName -Context $context | Sort-Object Length -Descending
+    $TopIndexes = Get-PercentageOfElementsInArray -array $AllBlobs -PercentageOf $PercentageToPrint
+    $TopBlobs = ($AllBlobs | Select-Object -First $TopIndexes)
+    Show-Output -TopBlobs $TopBlobs -AllBlobs $AllBlobs -StorageAccountName $StorageAccountName -ContainerName $ContainerName -PercentageToPrint $PercentageToPrint
+
