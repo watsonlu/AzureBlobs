@@ -11,7 +11,7 @@ Param(
     [string]$ResourceGroup,
     [string]$DirectoryToUpload = $PSScriptRoot,
     [int]$PercentageToPrint = 5,
-    [boolean]$UploadTestBlobs = $FALSE,
+    [switch]$UploadTestBlobs,
     [int]$StorageKeyIndex = 0    
 )
 
