@@ -80,9 +80,8 @@ function Get-StorageKey
         [Parameter(Mandatory=$true)]
         [string]$ResourceGroup
     )  
-
-    $key = (Get-AzureRMStorageAccountKey -ResourceGroup $ResourceGroup -StorageAccountName $StorageAccountName)[$IndexOfKeyToUse].value
-    return $key
+        $key = (Get-AzureRMStorageAccountKey -ResourceGroup $ResourceGroup -StorageAccountName $StorageAccountName -ErrorAction Stop)[$IndexOfKeyToUse].value
+        return $key
 }
 
 function Get-AuthenticatedWithAzure
@@ -106,16 +105,18 @@ function Get-AuthenticatedWithAzure
         [Parameter(Mandatory=$true)]
         [string]$SubscriptionName
     )
-    $ProfilePath = "$PSScriptRoot\profile.txt"
-    if ((Test-Path $ProfilePath) -eq $TRUE)
-    {
-        Select-AzureRmProfile -Path $ProfilePath
-    }
-    else
-    {
-        Add-AzureRmAccount
-        Save-AzureRmProfile -Path $ProfilePath 
-    }
+
+        $ProfilePath = "$PSScriptRoot\profile.txt"
+        if ((Test-Path $ProfilePath) -eq $TRUE)
+        {
+            Select-AzureRmProfile -Path $ProfilePath -ErrorAction Stop
+        }
+        else
+        {
+            Add-AzureRmAccount -ErrorAction Stop
+            Save-AzureRmProfile -Path $ProfilePath  -ErrorAction Stop
+        }
+
 }
 
 
@@ -169,7 +170,6 @@ function Add-TestData
     }
 
 }
-
     #Make sure you set your execution policy
     Install-Module AzureRM
   
