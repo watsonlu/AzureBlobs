@@ -170,19 +170,13 @@ function Add-TestData
 
 }
 
-    #Ensure that AzureRM module is installed.
+    #Make sure you set your execution policy
     Install-Module AzureRM
-    
-    #Block the script from continuing if there's any errors. Mainly an issue with incorrectly entered Resource names.
-    $ErrorActionPreference = Stop
-    
-    #Authenticate with Azure using either a fresh session in or reuse a previous session.
+  
     Get-AuthenticatedWithAzure -SubscriptionName $SubscriptionName
-    #Get the storage key, $StorageKeyIndex controls whether to get the first or second index.
+
     $StorageKey = Get-StorageKey -IndexOfKeyToUse $StorageKeyIndex -StorageAccountName $StorageAccountName -ResourceGroup $ResourceGroup
-    #Keep the AzureRM context as most commands require it.
     $context = Get-StorageContext -StorageAccountName $StorageAccountName -StorageKey $StorageKey
-    #Upload some images from the images directory if needed.
     if ($UploadTestBlobs -eq $TRUE)
     {
         Add-TestData -ContainerName $ContainerName -DirectoryToUpload $DirectoryToUpload -Context $context
