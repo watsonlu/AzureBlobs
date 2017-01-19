@@ -9,7 +9,6 @@ Param(
     [string]$ContainerName,
     [Parameter(Mandatory=$true)]
     [string]$ResourceGroup,
-    [string]$DirectoryToUpload = $PSScriptRoot,
     [int]$PercentageToPrint = 5,
     [switch]$UploadTestBlobs,
     [int]$StorageKeyIndex = 0    
@@ -179,7 +178,7 @@ function Add-TestData
     $context = Get-StorageContext -StorageAccountName $StorageAccountName -StorageKey $StorageKey
     if ($UploadTestBlobs -eq $TRUE)
     {
-        Add-TestData -ContainerName $ContainerName -DirectoryToUpload $DirectoryToUpload -Context $context
+        Add-TestData -ContainerName $ContainerName -DirectoryToUpload $PSScriptRoot\images -Context $context
     }
     $AllBlobs = Get-AzureStorageBlob -Container $ContainerName -Context $context | Sort-Object Length -Descending
     $TopIndexes = Get-PercentageOfElementsInArray -array $AllBlobs -PercentageOf $PercentageToPrint
