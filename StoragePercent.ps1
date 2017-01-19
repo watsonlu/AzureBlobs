@@ -77,7 +77,9 @@ function Get-AuthenticatedWithAzure
 
             If the user successfully logs in, a profile is created on the disk that contains the session so they don't have to keep logging in.
 
-            This profile eventually expires.
+            This profile eventually expires, so it will need to be updated.
+
+            This can be automated properly using a configuration management tool like Chef (Secure Data Bags would do this for us).
 
         .Example
             Get-AuthenticatedWithAzure -SubscriptionName "mysubname"
