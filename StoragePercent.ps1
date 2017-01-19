@@ -25,6 +25,14 @@ Print-BiggestBlobs -AllBlobs $TopBlobs -StorageAccountName $StorageAccountName -
 
 function Print-BiggestBlobs
 {
+    <#
+        .Synopsis
+            Prints out the contents of $AllBlobs in a pretty way
+        .Example
+            Print-BiggestBlobs -AllBlobs <ArrayOfBlobs> -StorageAccountName "mystorageaccountname" -ContainerName "mycontainername" -PercentageToPrint 5
+
+            This prints out the blobs supplied in a nicely formatted way
+    #>
     Param(
         [array]$AllBlobs,
         [string]$StorageAccountName,
@@ -37,6 +45,14 @@ function Print-BiggestBlobs
 
 function Get-StorageContext
 {
+    <#
+        .Synopsis
+            Gets the storage context from the supplied key and account name
+        .Example
+            Get-StorageContext -StorageAccountName "myaccountname" -StorageKey "qwewqek23k213k1233="
+
+            This returns the storage context.
+    #>
     Param(
         [string]$StorageAccountName,
         [string]$StorageKey
@@ -46,6 +62,14 @@ function Get-StorageContext
 
 function Get-StorageKey
 {
+    <#
+        .Synopsis
+            Get the storage key from the supplied account and Resource Group. By default it gets the first key from the account, but you can set the index to 1 to get the second key.
+        .Example
+            Get-StorageKey -IndexOfKeyToUse 0 -ResourceGroup "myresourcegroup" -StorageAccountName "myaccountname"
+
+            This returns the storage key.
+    #>
     Param(
         [int]$IndexOfKeyToUse,
         [string]$StorageAccountName,
@@ -56,6 +80,22 @@ function Get-StorageKey
 
 function Get-AuthenticatedWithAzure
 {
+    <#
+        .Synopsis
+            Checks to see if the session is logged in. If its not, a log in window appears to authenticate to Azure.
+
+            If set AzureSubscription fails, the session needs to be authenticated and the window appears.
+
+            If set AzureSubscription succeeds, we're already connected and do not need to authenticate again.
+
+            Authentication is cached for a couple of hours, in an automated system we would need to implement a way to store the Azure credentials permanently.
+            This should be done with a Config management tool like Chef (Secure Data-Bags), or by supplying secure environment variables using a tool like GoCD.
+
+        .Example
+            Get-AuthenticatedWithAzure -SubscriptionName "mysubname"
+
+            This ensures that there is an authenticated connection with Azure.
+    #>
     Param(
         [string]$SubscriptionName
     )  
@@ -72,6 +112,15 @@ function Get-AuthenticatedWithAzure
 
 function Get-TopPercentageOfIndexes
 {
+    <#
+        .Synopsis
+            Returns the first X of elements in the supplied array, where X is the percentage supplied by $PercentageOf
+
+        .Example
+            Get-TopPercentageOfIndexes -array < array of objects > -PercentageOf 5
+
+            This returns the first five percent of the supplied array.
+    #>
     Param(
         [array]$array,
         [int]$PercentageOf
@@ -82,6 +131,17 @@ function Get-TopPercentageOfIndexes
 
 function Upload-TestBlobs
 {
+    <#
+        .Synopsis
+            Uploads all the files in $DirectoryToUpload to $Container.
+
+            Existing files are overwritten
+
+        .Example
+            Upload-TestBlobs -ContainerName "mycontainer" -DirectoryToUpload <Absolute Path to Folder"
+
+            This uploads all files in the supplied directory.
+    #>
     Param(
         [string]$ContainerName,
         [string]$DirectoryToUpload,
