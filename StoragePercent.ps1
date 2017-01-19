@@ -2,7 +2,6 @@
 
 $SubscriptionName = "Visual Studio Enterprise"
 $StorageAccountName = "lukesstorageaccount"
-$Location = "North US"
 $ContainerName = "mycontainer"
 $ResourceGroup = "myresourcegrou"
 $StorageKey = 0
@@ -16,20 +15,20 @@ $StorageKey = Get-StorageKey -IndexOfKeyToUse $StorageKey -StorageAccountName $S
 $context = Get-StorageContext -StorageAccountName $StorageAccountName -StorageKey $StorageKey
 if ($UploadTestBlobs -eq $TRUE)
 {
-    Upload-TestBlobs -ContainerName $ContainerName -DirectoryToUpload $DirectoryToUpload -Context $context
+    Add-TestData -ContainerName $ContainerName -DirectoryToUpload $DirectoryToUpload -Context $context
 }
-$AllBlobs = Get-AzureStorageBlob -Container $ContainerName -Context $context | sort Length -Descending
-$TopIndexes = Get-TopPercentageOfIndexes -array $AllBlobs -PercentageOf $PercentageToPrint
+$AllBlobs = Get-AzureStorageBlob -Container $ContainerName -Context $context | Sort-Object Length -Descending
+$TopIndexes = Get-PercentageOfIndexes -array $AllBlobs -PercentageOf $PercentageToPrint
 $TopBlobs = ($AllBlobs | Select-Object -First $TopIndexes)
-Print-BiggestBlobs -AllBlobs $TopBlobs -StorageAccountName $StorageAccountName -ContainerName $ContainerName -PercentageToPrint $PercentageToPrint
+Show-Output -AllBlobs $TopBlobs -StorageAccountName $StorageAccountName -ContainerName $ContainerName -PercentageToPrint $PercentageToPrint
 
-function Print-BiggestBlobs
+function Show-Output
 {
     <#
         .Synopsis
             Prints out the contents of $AllBlobs in a pretty way
         .Example
-            Print-BiggestBlobs -AllBlobs <ArrayOfBlobs> -StorageAccountName "mystorageaccountname" -ContainerName "mycontainername" -PercentageToPrint 5
+            Show-Output -AllBlobs <ArrayOfBlobs> -StorageAccountName "mystorageaccountname" -ContainerName "mycontainername" -PercentageToPrint 5
 
             This prints out the blobs supplied in a nicely formatted way
     #>
@@ -43,7 +42,7 @@ function Print-BiggestBlobs
         [Parameter(Mandatory=$true)]
         [int]$PercentageToPrint
     )
-    Write-Host "Top $PercentageToPrint% of Blobs in '$StorageAccountName' in Container '$ContainerName' by size."
+    Write-Output "Top $PercentageToPrint% of Blobs in '$StorageAccountName' in Container '$ContainerName' by size."
     $AllBlobs | Format-Table -Property Name, @{Name="Size (KBs)";Expression={[math]::Ceiling($_.Length / 1Kb)}}
 }
 
@@ -120,14 +119,14 @@ function Get-AuthenticatedWithAzure
 }
 
 
-function Get-TopPercentageOfIndexes
+function Get-PercentageOfIndexes
 {
     <#
         .Synopsis
             Returns the first X of elements in the supplied array, where X is the percentage supplied by $PercentageOf
 
         .Example
-            Get-TopPercentageOfIndexes -array < array of objects > -PercentageOf 5
+            Get-PercentageOfIndexes -array < array of objects > -PercentageOf 5
 
             This returns the first five percent of the supplied array.
     #>
@@ -141,7 +140,7 @@ function Get-TopPercentageOfIndexes
 }
 
 
-function Upload-TestBlobs
+function Add-TestData
 {
     <#
         .Synopsis
@@ -150,7 +149,7 @@ function Upload-TestBlobs
             Existing files are overwritten
 
         .Example
-            Upload-TestBlobs -ContainerName "mycontainer" -DirectoryToUpload <Absolute Path to Folder"
+            Add-TestData -ContainerName "mycontainer" -DirectoryToUpload <Absolute Path to Folder"
 
             This uploads all files in the supplied directory.
     #>
