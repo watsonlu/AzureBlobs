@@ -4,24 +4,55 @@ $SubscriptionName = "Visual Studio Enterprise"
 $StorageAccountName = "lukesstorageaccount"
 $Location = "North US"
 $ContainerName = "mycontainer"
-$imagePath = "C:\Users\luwat\Pictures\smirk.svg"
 $ResourceGroup = "myresourcegrou"
 $StorageKey = 0
-$DirectoryToUpload = "C:\Users\luwat\Documents\Projects\Powershell\AzureBlobs\images"
-
-
+$DirectoryToUpload = $PSScriptRoot
+$PercentageToPrint = 5
+$UploadTestBlobs = $FALSE
 
 Get-AuthenticatedWithAzure -SubscriptionName $SubscriptionName
-$key = (Get-AzureRMStorageAccountKey -ResourceGroup $ResourceGroup -StorageAccountName $StorageAccountName)[$StorageKey].value
-$context = New-AzureStorageContext -StorageAccountName $StorageAccountName -StorageAccountKey $key
 
+$StorageKey = Get-StorageKey -IndexOfKeyToUse $StorageKey -StorageAccountName $StorageAccountName -ResourceGroup $ResourceGroup
+$context = Get-StorageContext -StorageAccountName $StorageAccountName -StorageKey $StorageKey
+if ($UploadTestBlobs -eq $TRUE)
+{
+    Upload-TestBlobs -ContainerName $ContainerName -DirectoryToUpload $DirectoryToUpload -Context $context
+}
+$AllBlobs = Get-AzureStorageBlob -Container $ContainerName -Context $context | sort Length -Descending
+$TopIndexes = Get-TopPercentageOfIndexes -array $AllBlobs -PercentageOf $PercentageToPrint
+$TopBlobs = ($AllBlobs | Select-Object -First $TopIndexes)
+Print-BiggestBlobs -AllBlobs $TopBlobs -StorageAccountName $StorageAccountName -ContainerName $ContainerName -PercentageToPrint $PercentageToPrint
 
-#Upload some garbage
+function Print-BiggestBlobs
+{
+    Param(
+        [array]$AllBlobs,
+        [string]$StorageAccountName,
+        [string]$ContainerName,
+        [int]$PercentageToPrint
+    )
+    Write-Host "Top $PercentageToPrint% of Blobs in '$StorageAccountName' in Container '$ContainerName' by size."
+    $AllBlobs | Format-Table -Property Name, @{Name="Size (KBs)";Expression={[math]::Ceiling($_.Length / 1Kb)}}
+}
 
-Upload-TestBlobs -ContainerName $ContainerName -DirectoryToUpload $DirectoryToUpload -Context $context
-$blobs = Get-AzureStorageBlob -Container $ContainerName -Context $context | sort Length -Descending
-$TopIndexes = Get-TopPercentageOfIndexes -array $blobs -PercentageOf 5
-$blobs | Select-Object -First $TopIndexes
+function Get-StorageContext
+{
+    Param(
+        [string]$StorageAccountName,
+        [string]$StorageKey
+    )
+    return New-AzureStorageContext -StorageAccountName $StorageAccountName -StorageAccountKey $StorageKey
+}
+
+function Get-StorageKey
+{
+    Param(
+        [int]$IndexOfKeyToUse,
+        [string]$StorageAccountName,
+        [string]$ResourceGroup
+    )  
+    return (Get-AzureRMStorageAccountKey -ResourceGroup $ResourceGroup -StorageAccountName $StorageAccountName)[$IndexOfKeyToUse].value
+}
 
 function Get-AuthenticatedWithAzure
 {
@@ -57,7 +88,7 @@ function Upload-TestBlobs
         [Microsoft.WindowsAzure.Commands.Common.Storage.AzureStorageContext]$Context
     )
     foreach ($image in Get-ChildItem $DirectoryToUpload) {
-        #Set-AzureStorageBlobContent -File $image.FullName -Container $ContainerName -Blob $image.Name -Context $Context -Force
+        Set-AzureStorageBlobContent -File $image.FullName -Container $ContainerName -Blob $image.Name -Context $Context -Force
     }
 
 }
