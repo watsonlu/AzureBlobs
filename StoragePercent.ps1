@@ -34,9 +34,13 @@ function Print-BiggestBlobs
             This prints out the blobs supplied in a nicely formatted way
     #>
     Param(
+        [Parameter(Mandatory=$true)]
         [array]$AllBlobs,
+        [Parameter(Mandatory=$true)]
         [string]$StorageAccountName,
+        [Parameter(Mandatory=$true)]
         [string]$ContainerName,
+        [Parameter(Mandatory=$true)]
         [int]$PercentageToPrint
     )
     Write-Host "Top $PercentageToPrint% of Blobs in '$StorageAccountName' in Container '$ContainerName' by size."
@@ -54,7 +58,9 @@ function Get-StorageContext
             This returns the storage context.
     #>
     Param(
+        [Parameter(Mandatory=$true)]
         [string]$StorageAccountName,
+        [Parameter(Mandatory=$true)]
         [string]$StorageKey
     )
     return New-AzureStorageContext -StorageAccountName $StorageAccountName -StorageAccountKey $StorageKey
@@ -71,8 +77,11 @@ function Get-StorageKey
             This returns the storage key.
     #>
     Param(
+        [Parameter(Mandatory=$true)]
         [int]$IndexOfKeyToUse,
+        [Parameter(Mandatory=$true)]
         [string]$StorageAccountName,
+        [Parameter(Mandatory=$true)]
         [string]$ResourceGroup
     )  
     return (Get-AzureRMStorageAccountKey -ResourceGroup $ResourceGroup -StorageAccountName $StorageAccountName)[$IndexOfKeyToUse].value
@@ -97,6 +106,7 @@ function Get-AuthenticatedWithAzure
             This ensures that there is an authenticated connection with Azure.
     #>
     Param(
+        [Parameter(Mandatory=$true)]
         [string]$SubscriptionName
     )  
     Try
@@ -122,7 +132,9 @@ function Get-TopPercentageOfIndexes
             This returns the first five percent of the supplied array.
     #>
     Param(
+        [Parameter(Mandatory=$true)]
         [array]$array,
+        [Parameter(Mandatory=$true)]
         [int]$PercentageOf
     )   
     return [math]::Ceiling(($PercentageOf * $array.Count) / 100)
@@ -143,8 +155,11 @@ function Upload-TestBlobs
             This uploads all files in the supplied directory.
     #>
     Param(
+        [Parameter(Mandatory=$true)]
         [string]$ContainerName,
+        [Parameter(Mandatory=$true)]
         [string]$DirectoryToUpload,
+        [Parameter(Mandatory=$true)]
         [Microsoft.WindowsAzure.Commands.Common.Storage.AzureStorageContext]$Context
     )
     foreach ($image in Get-ChildItem $DirectoryToUpload) {
