@@ -1,5 +1,21 @@
 ﻿#requires -version 5.0
 #requires –runasadministrator
+Param(
+    [Parameter(Mandatory=$true)]
+    [string]$SubscriptionName,
+    [Parameter(Mandatory=$true)]
+    [string]$StorageAccountName,
+    [Parameter(Mandatory=$true)]
+    [string]$ContainerName,
+    [Parameter(Mandatory=$true)]
+    [string]$ResourceGroup,
+    [string]$DirectoryToUpload = $PSScriptRoot,
+    [int]$PercentageToPrint = 5,
+    [boolean]$UploadTestBlobs = $FALSE,
+    [int]$StorageKeyIndex = 0    
+)
+
+
 function Show-Output
 {
     <#
@@ -153,20 +169,13 @@ function Add-TestData
     }
 
 }
+
     #Make sure you set your execution policy
     Install-Module AzureRM
-
-    $SubscriptionName = "Visual Studio Enterprise"
-    $StorageAccountName = "lukesstorageaccount"
-    $ContainerName = "mycontainer"
-    $ResourceGroup = "myresourcegrou"
-    $StorageKey = 0
-    $DirectoryToUpload = $PSScriptRoot
-    $PercentageToPrint = 5
-    $UploadTestBlobs = $FALSE
+  
     Get-AuthenticatedWithAzure -SubscriptionName $SubscriptionName
 
-    $StorageKey = Get-StorageKey -IndexOfKeyToUse $StorageKey -StorageAccountName $StorageAccountName -ResourceGroup $ResourceGroup
+    $StorageKey = Get-StorageKey -IndexOfKeyToUse $StorageKeyIndex -StorageAccountName $StorageAccountName -ResourceGroup $ResourceGroup
     $context = Get-StorageContext -StorageAccountName $StorageAccountName -StorageKey $StorageKey
     if ($UploadTestBlobs -eq $TRUE)
     {
